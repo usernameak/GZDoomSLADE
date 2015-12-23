@@ -36,6 +36,7 @@
 /win_installer/Output
 cmake-build-debug/
 \.idea/
+target/
 
 /dist/*
 !/dist/res
