@@ -51,19 +51,26 @@ namespace MapEditor
 	{
 		int			index;
 		ItemType	type;
+		int		    extra_floor_index;
 
-		Item(int index = -1, ItemType type = ItemType::Any) : index{ index }, type{ type } {}
+		Item(int index = -1, ItemType type = ItemType::Any, int extra_floor_index = -1) : index{ index }, type{ type }, extra_floor_index{ extra_floor_index } {}
 
 		// Comparison operators
-		bool operator<(const Item& other) const {
+		bool operator<(const Item& other) const
+		{
 			if (this->type == other.type)
-				return this->index < other.index;
+			{
+				if (this->index == other.index)
+					return this->extra_floor_index < other.extra_floor_index;
+				else
+					return this->index < other.index;
+			}
 			else
 				return this->type < other.type;
 		}
 		bool operator==(const Item& other) const
 		{
-			return index == other.index && (type == ItemType::Any || type == other.type);
+			return index == other.index && (type == ItemType::Any || type == other.type) && this->extra_floor_index == other.extra_floor_index;
 		}
 		bool operator!=(const Item& other) const
 		{
