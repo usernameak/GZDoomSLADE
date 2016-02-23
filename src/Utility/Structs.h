@@ -614,12 +614,17 @@ struct frect_t
 		br.set(rect.br);
 	}
 
-	double x1() const { return tl.x; }
-	double y1() const { return tl.y; }
-	double x2() const { return br.x; }
-	double y2() const { return br.y; }
-	fpoint2_t p1() const { return tl; }
-	fpoint2_t p2() const { return br; }
+	frect_t flip()
+	{
+		return frect_t(br, tl);
+	}
+
+	double x1() { return tl.x; }
+	double y1() { return tl.y; }
+	double x2() { return br.x; }
+	double y2() { return br.y; }
+	fpoint2_t p1() { return tl; }
+	fpoint2_t p2() { return br; }
 
 	double left()	const { return min(tl.x, br.x); }
 	double top()	const { return min(tl.y, br.y); }
