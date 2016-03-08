@@ -1282,6 +1282,28 @@ void MapRenderer3D::setupQuadTexCoords(MapRenderer3D::quad_3d_t* quad, int lengt
 	quad->points[3].ty = (y1 * y_mult) + ((h_top - quad->points[3].z) * y_mult);
 }
 
+// Helper for updateLine -- fetches the per-wall-section offset and scale and
+// adjusts the existing offsets to match.
+static inline void _apply_zdoom_per_section_offsets(MapSide* side, string section_name, double* xoff, double* yoff, double* sx, double* sy)
+{
+	if(Game::configuration().featureSupported(Game::UDMFFeature::TextureOffsets)) {
+		if (side->hasProp("offsetx_" + section_name))
+			*xoff += side->floatProperty("offsetx_" + section_name);
+		if (side->hasProp("offsety_" + section_name))
+			*yoff += side->floatProperty("offsety_" + section_name);
+	}
+
+	if (Game::configuration().featureSupported(Game::UDMFFeature::TextureScaling)) {
+		if (side->hasProp("scalex_" + section_name))
+			*sx = 1.0 / side->floatProperty("scalex_" + section_name);
+		if (side->hasProp("scaley_" + section_name))
+			*sy = 1.0 / side->floatProperty("scaley_" + section_name);
+	}
+
+	*xoff *= *sx;
+	*yoff *= *sy;
+}
+
 /* MapRenderer3D::updateLine
  * Updates cached rendering data for line [index]
  *******************************************************************/
@@ -1354,28 +1376,12 @@ void MapRenderer3D::updateLine(unsigned index)
 	{
 		quad_3d_t quad;
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff1;
 		yoff = yoff1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			if (line->s1()->hasProp("offsetx_mid"))
-				xoff += line->s1()->floatProperty("offsetx_mid");
-			if (line->s1()->hasProp("offsety_mid"))
-				yoff += line->s1()->floatProperty("offsety_mid");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s1()->hasProp("scalex_mid"))
-				sx = 1.0 / line->s1()->floatProperty("scalex_mid");
-			if (line->s1()->hasProp("scaley_mid"))
-				sy = 1.0 / line->s1()->floatProperty("scaley_mid");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s1(), "mid", &xoff, &yoff, &sx, &sy);
 
 		// Create quad
 		setupQuad(&quad, line->seg(), cp1, fp1);
@@ -1446,29 +1452,12 @@ void MapRenderer3D::updateLine(unsigned index)
 	{
 		quad_3d_t quad;
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff1;
 		yoff = yoff1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			// UDMF extra offsets
-			if (line->s1()->hasProp("offsetx_bottom"))
-				xoff += line->s1()->floatProperty("offsetx_bottom");
-			if (line->s1()->hasProp("offsety_bottom"))
-				yoff += line->s1()->floatProperty("offsety_bottom");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s1()->hasProp("scalex_bottom"))
-				sx = 1.0 / line->s1()->floatProperty("scalex_bottom");
-			if (line->s1()->hasProp("scaley_bottom"))
-				sy = 1.0 / line->s1()->floatProperty("scaley_bottom");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s1(), "bottom", &xoff, &yoff, &sx, &sy);
 
 		if (lpeg)	// Lower unpegged
 			yoff += (ceiling1 - floor2);
@@ -1497,31 +1486,15 @@ void MapRenderer3D::updateLine(unsigned index)
 		// Get texture
 		quad.texture = MapEditor::textureManager().getTexture(midtex1, mixed);
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff1;
 		yoff = yoff1;
-		double ytex = 0;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			if (line->s1()->hasProp("offsetx_mid"))
-				xoff += line->s1()->floatProperty("offsetx_mid");
-			if (line->s1()->hasProp("offsety_mid"))
-				yoff += line->s1()->floatProperty("offsety_mid");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s1()->hasProp("scalex_mid"))
-				sx = 1.0 / line->s1()->floatProperty("scalex_mid");
-			if (line->s1()->hasProp("scaley_mid"))
-				sy = 1.0 / line->s1()->floatProperty("scaley_mid");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s1(), "mid", &xoff, &yoff, &sx, &sy);
 
 		// Setup quad coordinates
+		double ytex = 0;
 		double top, bottom;
 		if ((map->currentFormat() == MAP_DOOM64) || ((map->currentFormat() == MAP_UDMF &&
 			Game::configuration().featureSupported(UDMFFeature::SideMidtexWrapping) &&
@@ -1573,29 +1546,12 @@ void MapRenderer3D::updateLine(unsigned index)
 	{
 		quad_3d_t quad;
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff1;
 		yoff = yoff1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			// UDMF extra offsets
-			if (line->s1()->hasProp("offsetx_top"))
-				xoff += line->s1()->floatProperty("offsetx_top");
-			if (line->s1()->hasProp("offsety_top"))
-				yoff += line->s1()->floatProperty("offsety_top");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s1()->hasProp("scalex_top"))
-				sx = 1.0 / line->s1()->floatProperty("scalex_top");
-			if (line->s1()->hasProp("scaley_top"))
-				sy = 1.0 / line->s1()->floatProperty("scaley_top");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s1(), "top", &xoff, &yoff, &sx, &sy);
 
 		// Create quad
 		setupQuad(&quad, line->seg(), cp1, cp2);
@@ -1617,29 +1573,12 @@ void MapRenderer3D::updateLine(unsigned index)
 	{
 		quad_3d_t quad;
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff2;
 		yoff = yoff2;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			// UDMF extra offsets
-			if (line->s2()->hasProp("offsetx_bottom"))
-				xoff += line->s2()->floatProperty("offsetx_bottom");
-			if (line->s2()->hasProp("offsety_bottom"))
-				yoff += line->s2()->floatProperty("offsety_bottom");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s2()->hasProp("scalex_bottom"))
-				sx = 1.0 / line->s2()->floatProperty("scalex_bottom");
-			if (line->s2()->hasProp("scaley_bottom"))
-				sy = 1.0 / line->s2()->floatProperty("scaley_bottom");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s2(), "bottom", &xoff, &yoff, &sx, &sy);
 
 		if (lpeg)	// Lower unpegged
 			yoff += (ceiling2 - floor1);
@@ -1668,31 +1607,15 @@ void MapRenderer3D::updateLine(unsigned index)
 		// Get texture
 		quad.texture = MapEditor::textureManager().getTexture(midtex2, mixed);
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff2;
 		yoff = yoff2;
-		double ytex = 0;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			if (line->s2()->hasProp("offsetx_mid"))
-				xoff += line->s2()->floatProperty("offsetx_mid");
-			if (line->s2()->hasProp("offsety_mid"))
-				yoff += line->s2()->floatProperty("offsety_mid");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s2()->hasProp("scalex_mid"))
-				sx = 1.0 / line->s2()->floatProperty("scalex_mid");
-			if (line->s2()->hasProp("scaley_mid"))
-				sy = 1.0 / line->s2()->floatProperty("scaley_mid");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s2(), "mid", &xoff, &yoff, &sx, &sy);
 
 		// Setup quad coordinates
+		double ytex = 0;
 		double top, bottom;
 		if ((map->currentFormat() == MAP_DOOM64) || (map->currentFormat() == MAP_UDMF &&
 			Game::configuration().featureSupported(UDMFFeature::SideMidtexWrapping) && line->boolProperty("wrapmidtex")))
@@ -1744,29 +1667,12 @@ void MapRenderer3D::updateLine(unsigned index)
 	{
 		quad_3d_t quad;
 
-		// Determine offsets
+		// Determine offsets and scale
 		xoff = xoff2;
 		yoff = yoff2;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureOffsets))
-		{
-			// UDMF extra offsets
-			if (line->s2()->hasProp("offsetx_top"))
-				xoff += line->s2()->floatProperty("offsetx_top");
-			if (line->s2()->hasProp("offsety_top"))
-				yoff += line->s2()->floatProperty("offsety_top");
-		}
-
-		// Texture scale
 		sx = sy = 1;
-		if (map->currentFormat() == MAP_UDMF && Game::configuration().featureSupported(UDMFFeature::TextureScaling))
-		{
-			if (line->s2()->hasProp("scalex_top"))
-				sx = 1.0 / line->s2()->floatProperty("scalex_top");
-			if (line->s2()->hasProp("scaley_top"))
-				sy = 1.0 / line->s2()->floatProperty("scaley_top");
-		}
-		xoff *= sx;
-		yoff *= sy;
+		if (map->currentFormat() == MAP_UDMF)
+			_apply_zdoom_per_section_offsets(line->s2(), "top", &xoff, &yoff, &sx, &sy);
 
 		// Create quad
 		setupQuad(&quad, line->seg().flip(), cp2, cp1);
