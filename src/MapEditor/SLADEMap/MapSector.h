@@ -85,9 +85,9 @@ private:
 	plane_t				plane_floor;
 	plane_t				plane_ceiling;
 
+public:
 	void		setGeometryUpdated();
 
-public:
 	// TODO maybe make this private, maybe
 	vector<extra_floor_t> extra_floors;
 
