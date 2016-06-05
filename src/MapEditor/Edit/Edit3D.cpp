@@ -351,8 +351,22 @@ void Edit3D::changeSectorHeight(int amount) const
 			items[a].type == ItemType::WallMiddle ||
 			items[a].type == ItemType::WallTop)
 		{
+			bool floor = false;
 			// Get sector
 			auto sector = context_.map().getSide(items[a].index)->getSector();
+
+			int floor_idx = items[a].extra_floor_index;
+			if (floor_idx >= 0 && floor_idx < sector->extra_floors.size())
+			{
+				MapSector* control_sector = context_.map().getSector(
+					sector->extra_floors[floor_idx].control_sector_index);
+				if (control_sector)
+				{
+					sector = control_sector;
+					// Floor/ceiling are reversed in a 3D floor
+					floor = !floor;
+				}
+			}
 
 			// Check this sector's ceiling hasn't already been changed
 			int index = sector->getIndex();
@@ -360,48 +374,96 @@ void Edit3D::changeSectorHeight(int amount) const
 				continue;
 
 			// Change height
-			int height = sector->intProperty("heightceiling");
-			sector->setIntProperty("heightceiling", height + amount);
+			/*int height = sector->intProperty("heightceiling");
+			sector->setIntProperty("heightceiling", height + amount);*/
+			//sector->setCeilingHeight(sector->getCeilingHeight() + amount);
+			if (floor)
+			{
+				// Change height
+				sector->setFloorHeight(sector->getFloorHeight() + amount);
+			}
+			else
+			{
+				// Check this sector's ceiling hasn't already been changed
+				bool done = false;
+				int index = sector->getIndex();
+				if (VECTOR_EXISTS(ceilings, index))
+					continue;
+
+				// Change height
+				sector->setCeilingHeight(sector->getCeilingHeight() + amount);
+
+				// Set to changed
+				ceilings.push_back(sector->getIndex());
+			}
 
 			// Set to changed
-			ceilings.push_back(index);
+			// ceilings.push_back(index);
 		}
 
 		// Floor
-		else if (items[a].type == ItemType::Floor)
+		/*else if (items[a].type == ItemType::Floor)
 		{
 			// Get sector
 			auto sector = context_.map().getSector(items[a].index);
 
 			// Change height
 			sector->setFloorHeight(sector->getFloorHeight() + amount);
-		}
+		}*/
 
 		// Ceiling
-		else if (items[a].type == ItemType::Ceiling)
+		else if (items[a].type == ItemType::Ceiling || items[a].type == ItemType::Floor)
 		{
+			bool floor = (items[a].type == ItemType::Floor);
 			// Get sector
 			auto sector = context_.map().getSector(items[a].index);
 
-			// Check this sector's ceiling hasn't already been changed
-			bool done = false;
-			int index = sector->getIndex();
-			for (unsigned b = 0; b < ceilings.size(); b++)
+
+			int floor_idx = items[a].extra_floor_index;
+			if (floor_idx >= 0 && floor_idx < sector->extra_floors.size())
 			{
-				if (ceilings[b] == index)
+				MapSector* control_sector = context_.map().getSector(
+					sector->extra_floors[floor_idx].control_sector_index);
+				if (control_sector)
 				{
-					done = true;
-					break;
+					sector = control_sector;
+					// Floor/ceiling are reversed in a 3D floor
+					floor = !floor;
 				}
 			}
-			if (done)
-				continue;
+
+
+			// Check this sector's ceiling hasn't already been changed
+
 
 			// Change height
-			sector->setCeilingHeight(sector->getCeilingHeight() + amount);
+			// sector->setCeilingHeight(sector->getCeilingHeight() + amount);
+			if (floor)
+			{
+				// Change height
+				sector->setFloorHeight(sector->getFloorHeight() + amount);
+			}
+			else
+			{
+				bool done = false;
+				int index = sector->getIndex();
+				for (unsigned b = 0; b < ceilings.size(); b++)
+				{
+					if (ceilings[b] == index)
+					{
+						done = true;
+						break;
+					}
+				}
+				if (done)
+					continue;
+				// Change height
+				sector->setCeilingHeight(sector->getCeilingHeight() + amount);
 
-			// Set to changed
-			ceilings.push_back(sector->getIndex());
+				// Set to changed
+				ceilings.push_back(sector->getIndex());
+			}
+
 		}
 	}
 
