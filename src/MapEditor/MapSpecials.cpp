@@ -68,15 +68,6 @@ void MapSpecials::processMapSpecials(SLADEMap* map)
 		processEternitySlopes(map);
 }
 
-/* MapSpecials::processLineSpecial
- * Process a line's special, depending on the current game/port
- *******************************************************************/
-void MapSpecials::processLineSpecial(MapLine* line)
-{
-	if (Game::configuration().currentPort() == "zdoom")
-		processZDoomLineSpecial(line);
-}
-
 /* MapSpecials::getTagColour
  * Sets [colour] to the parsed colour for [tag]. Returns true if the
  * tag has a colour, false otherwise

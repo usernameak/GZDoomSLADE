@@ -41,7 +41,6 @@ public:
 	void	reset();
 
 	void	processMapSpecials(SLADEMap* map);
-	void	processLineSpecial(MapLine* line);
 
 	bool	getTagColour(int tag, rgba_t* colour);
 	bool	getTagFadeColour(int tag, rgba_t *colour);
