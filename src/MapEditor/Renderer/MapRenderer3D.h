@@ -23,6 +23,7 @@ public:
 
 	    // Quad/flat flags
 	    SKY		= 4,
+		DRAWBOTH	= 128,
 
 	    // Quad flags
 	    BACK	= 8,
@@ -32,7 +33,6 @@ public:
 
 	    // Flat flags
 	    CEIL	= 8,
-		DRAWBOTH	= 16,
 
 	    // Thing flags
 	    ICON	= 4,

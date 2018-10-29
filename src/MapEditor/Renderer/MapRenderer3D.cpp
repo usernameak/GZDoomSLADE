@@ -1079,8 +1079,14 @@ void MapRenderer3D::renderFlat(flat_3d_t* flat)
 			}
 		}
 
+		if(flat->flags & DRAWBOTH)
+			glDisable(GL_CULL_FACE);
+
 		// Render
 		flat->sector->getPolygon()->renderVBO(flat->vbo_offset);
+
+		if(flat->flags & DRAWBOTH)
+			glEnable(GL_CULL_FACE);
 	}
 	else
 	{
@@ -1098,8 +1104,15 @@ void MapRenderer3D::renderFlat(flat_3d_t* flat)
 			glTranslated(0, 0, flat->sector->getFloorHeight());
 		}
 
+
+		if(flat->flags & DRAWBOTH)
+			glDisable(GL_CULL_FACE);
+
 		// Render
 		flat->sector->getPolygon()->render();
+
+		if(flat->flags & DRAWBOTH)
+			glEnable(GL_CULL_FACE);
 
 		glPopMatrix();
 	}
@@ -1772,7 +1785,6 @@ void MapRenderer3D::updateLine(unsigned index)
 			xoff = yoff = 0;
 			sx = sy = 1;
 
-			// TODO there's a flag for showing on both sides
 			// TODO missing texture check should look for this!
 			string texname;
 			// Not documented, but in practice, when both flags are set, upper wins
@@ -1799,6 +1811,9 @@ void MapRenderer3D::updateLine(unsigned index)
 
 			setupQuadTexCoords(&quad, length, xoff, yoff, control_sector->getCeilingHeight(), control_sector->getFloorHeight(), false, sx, sy);
 			quad.flags |= MIDTEX;
+			if (extra.draw_inside) {
+				quad.flags |= DRAWBOTH;
+			}
 			quad.control_line = extra.control_line_index;
 			quad.control_side = control_line->s1()->getIndex();
 			// TODO other flags?
@@ -1844,6 +1859,11 @@ void MapRenderer3D::renderQuad(MapRenderer3D::quad_3d_t* quad, float alpha)
 	// Setup fog
 	setFog(quad->fogcolour, quad->light);
 
+	// Setup DRAWBOTH
+	if (quad->flags & DRAWBOTH) {
+		glDisable(GL_CULL_FACE);
+	}
+
 	// Draw quad
 	glBegin(GL_QUADS);
 	glTexCoord2f(quad->points[0].tx, quad->points[0].ty);	glVertex3f(quad->points[0].x, quad->points[0].y, quad->points[0].z);
@@ -1860,6 +1880,9 @@ void MapRenderer3D::renderQuad(MapRenderer3D::quad_3d_t* quad, float alpha)
 		else if (quad->flags & MIDTEX)
 			glAlphaFunc(GL_GREATER, 0.0f);
 	}
+
+	if (quad->flags & DRAWBOTH)
+		glEnable(GL_CULL_FACE);
 }
 
 /* MapRenderer3D::renderWalls
@@ -2665,7 +2688,7 @@ void MapRenderer3D::checkVisibleQuads()
 		{
 			// Check we're on the right side of the quad
 			quad = &(lines[a].quads[q]);
-			if (MathStuff::lineSide(cam_position.get2d(), fseg2_t(quad->points[0].x, quad->points[0].y, quad->points[2].x, quad->points[2].y)) < 0)
+			if (!(quad->flags & DRAWBOTH) && MathStuff::lineSide(cam_position.get2d(), fseg2_t(quad->points[0].x, quad->points[0].y, quad->points[2].x, quad->points[2].y)) < 0)
 				continue;
 
 			quads[n_quads] = quad;
@@ -2730,13 +2753,13 @@ void MapRenderer3D::checkVisibleFlats()
 			flats.push_back(&flat);
 
 			// For two-sided flats, update which plane is currently visible
-			if (flat.flags & DRAWBOTH)
+			/*if (flat.flags & DRAWBOTH)
 			{
 				if (cam_position.z < flat.plane.height_at(cam_position.x, cam_position.y))
 					flat.flags |= CEIL;
 				else
 					flat.flags &= ~CEIL;
-			}
+			}*/
 		}
 	}
 
@@ -2787,7 +2810,7 @@ MapEditor::Item MapRenderer3D::determineHilight()
 			quad = &lines[a].quads[q];
 
 			// Check side of camera
-			if (MathStuff::lineSide(cam_position.get2d(), fseg2_t(quad->points[0].x, quad->points[0].y, quad->points[2].x, quad->points[2].y)) < 0)
+			if (!(quad->flags & DRAWBOTH) && MathStuff::lineSide(cam_position.get2d(), fseg2_t(quad->points[0].x, quad->points[0].y, quad->points[2].x, quad->points[2].y)) < 0)
 				continue;
 
 			// Check intersection height
@@ -2845,10 +2868,12 @@ MapEditor::Item MapRenderer3D::determineHilight()
 
 			// Check if on the correct side of the plane
 			double flat_z = sector_flats[a][b].plane.height_at(cam_position.x, cam_position.y);
-			if (flat.flags & CEIL && cam_position.z >= flat_z)
-				continue;
-			if (!(flat.flags & CEIL) && cam_position.z <= flat_z)
-				continue;
+			if(!(flat.flags & DRAWBOTH)) {
+				if (flat.flags & CEIL && cam_position.z >= flat_z)
+					continue;
+				if (!(flat.flags & CEIL) && cam_position.z <= flat_z)
+					continue;
+			}
 
 			// Check if intersection is within sector
 			if (!map->getSector(a)->isWithin((cam_position + cam_dir3d * dist).get2d()))
