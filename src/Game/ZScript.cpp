@@ -969,7 +969,7 @@ bool Definitions::parseZScript(ArchiveEntry* entry)
 	auto start = App::runTimer();
 	vector<ParsedStatement> parsed;
 	parseBlocks(entry, parsed);
-	Log::debug(2, S_FMT("parseBlocks: %dms", App::runTimer() - start));
+	Log::debug(2, S_FMT("parseBlocks: %ldms", App::runTimer() - start));
 	start = App::runTimer();
 
 	for (auto& block : parsed)
@@ -1027,7 +1027,7 @@ bool Definitions::parseZScript(ArchiveEntry* entry)
 		}
 	}
 
-	Log::debug(2, S_FMT("ZScript: %dms", App::runTimer() - start));
+	Log::debug(2, S_FMT("ZScript: %ldms", App::runTimer() - start));
 
 	return true;
 }
