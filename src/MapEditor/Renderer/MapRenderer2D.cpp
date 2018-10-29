@@ -890,7 +890,7 @@ bool MapRenderer2D::renderSpriteThing(double x, double y, double angle, const Ga
 	//}
 
 	// Bind texture
-	if (tex_last != tex)
+	if (tex_last != tex && tex != nullptr)
 	{
 		tex->bind();
 		tex_last = tex;
