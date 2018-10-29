@@ -52,8 +52,10 @@ namespace MapEditor
 		int			index;
 		ItemType	type;
 		int		    extra_floor_index;
+		//int         control_line;
+		int         real_index;
 
-		Item(int index = -1, ItemType type = ItemType::Any, int extra_floor_index = -1) : index{ index }, type{ type }, extra_floor_index{ extra_floor_index } {}
+		Item(int index = -1, ItemType type = ItemType::Any, int extra_floor_index = -1) : index{ index }, type{ type }, extra_floor_index{ extra_floor_index }, real_index{ -1 } {}
 
 		// Comparison operators
 		bool operator<(const Item& other) const
@@ -61,7 +63,11 @@ namespace MapEditor
 			if (this->type == other.type)
 			{
 				if (this->index == other.index)
-					return this->extra_floor_index < other.extra_floor_index;
+					if(this->extra_floor_index == other.extra_floor_index) {
+						return this->real_index < other.real_index;
+					} else {
+						return this->extra_floor_index < other.extra_floor_index;
+					}
 				else
 					return this->index < other.index;
 			}
@@ -70,7 +76,7 @@ namespace MapEditor
 		}
 		bool operator==(const Item& other) const
 		{
-			return index == other.index && (type == ItemType::Any || type == other.type) && this->extra_floor_index == other.extra_floor_index;
+			return index == other.index && (type == ItemType::Any || type == other.type) && this->extra_floor_index == other.extra_floor_index && this->real_index == other.real_index;
 		}
 		bool operator!=(const Item& other) const
 		{

@@ -236,7 +236,6 @@ void Edit3D::changeOffset(int amount, bool x) const
 		if (items[a].type >= ItemType::WallTop && items[a].type <= ItemType::WallBottom)
 		{
 			MapSide* side = context_.map().getSide(items[a].index);
-
 			// If offsets are linked, just change the whole side offset
 			if (link_offset_)
 			{
@@ -1201,9 +1200,13 @@ void Edit3D::changeScale(double amount, bool x) const
 		{
 			auto sector = context_.map().getSector(items[a].index);
 
+			bool floor = items[a].type == ItemType::Floor;
+
+			lookup3DFloor(items[a], floor, sector, context_.map());
+
 			// Build property string
 			string prop = x ? "xscale" : "yscale";
-			prop += (items[a].type == ItemType::Floor) ? "floor" : "ceiling";
+			prop += floor ? "floor" : "ceiling";
 
 			// Set
 			double scale = sector->floatProperty(prop);

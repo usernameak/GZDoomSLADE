@@ -206,9 +206,10 @@ MapRenderer3D::quad_3d_t* MapRenderer3D::getQuad(MapEditor::Item item)
 		return nullptr;
 
 	// Get side
-	MapSide* side = map->getSide(item.index);
+	MapSide* side = item.real_index >= 0 ? map->getSide(item.real_index) : map->getSide(item.index);
 	if (!side)
 		return nullptr;
+	MapSide* unrealSide = item.real_index >= 0 ? map->getSide(item.index) : nullptr;
 
 	// Find matching quad
 	int lindex = side->getParentLine()->getIndex();
@@ -221,6 +222,11 @@ MapRenderer3D::quad_3d_t* MapRenderer3D::getQuad(MapEditor::Item item)
 			continue;
 		if (side == side->getParentLine()->s2() && (quad->flags & BACK) == 0)
 			continue;
+
+		// Check 3D floor
+
+		if(quad->control_line >= 0 && quad->control_line != item.index)
+			return quad;
 
 		// Check part
 		if (item.type == MapEditor::ItemType::WallBottom)
@@ -238,6 +244,11 @@ MapRenderer3D::quad_3d_t* MapRenderer3D::getQuad(MapEditor::Item item)
 			if ((quad->flags & UPPER) == 0 && (quad->flags & LOWER) == 0)
 				return quad;
 		}
+		/*if (item.type == MapEditor::ItemType::Wall3DFloor)
+		{
+			if(quad->control_line >= 0 && quad->control_line == item.control_line)
+				return quad;
+		}*/
 	}
 
 	// Not found
@@ -1788,6 +1799,8 @@ void MapRenderer3D::updateLine(unsigned index)
 
 			setupQuadTexCoords(&quad, length, xoff, yoff, control_sector->getCeilingHeight(), control_sector->getFloorHeight(), false, sx, sy);
 			quad.flags |= MIDTEX;
+			quad.control_line = extra.control_line_index;
+			quad.control_side = control_line->s1()->getIndex();
 			// TODO other flags?
 			// TODO probably need to remember which extra-floor this came from
 			// too, which is slightly more complicated since it might be the
@@ -1959,16 +1972,20 @@ void MapRenderer3D::renderWallSelection(const ItemSelection& selection, float al
 		// Ignore if not a wall selection
 		if (selection[a].type != MapEditor::ItemType::WallBottom &&
 		        selection[a].type != MapEditor::ItemType::WallMiddle &&
-		        selection[a].type != MapEditor::ItemType::WallTop)
+		        selection[a].type != MapEditor::ItemType::WallTop/* && 
+				selection[a].type != MapEditor::ItemType::Wall3DFloor*/)
 			continue;
 
 		// Get side
-		MapSide* side = map->getSide(selection[a].index);
+
+		bool is3DFloor = selection[a].real_index >= 0;
+		MapSide* side = is3DFloor ? map->getSide(selection[a].real_index) : map->getSide(selection[a].index);
+		
 		if (!side)
 			continue;
 
 		// Get parent line index
-		int line = map->getSide(selection[a].index)->getParentLine()->getIndex();
+		int line = side->getParentLine()->getIndex();
 
 		// Get appropriate quad
 		quad_3d_t* quad = nullptr;
@@ -1981,7 +1998,12 @@ void MapRenderer3D::renderWallSelection(const ItemSelection& selection, float al
 				continue;
 
 			// Check quad is correct part
-			if (lines[line].quads[q].flags & UPPER)
+			if (is3DFloor && selection[a].real_index == lines[line].quads[q].control_side)
+			{
+				quad = &lines[line].quads[q];
+				break;
+			}
+			else if (lines[line].quads[q].flags & UPPER)
 			{
 				if (selection[a].type == MapEditor::ItemType::WallTop)
 				{
@@ -2001,7 +2023,12 @@ void MapRenderer3D::renderWallSelection(const ItemSelection& selection, float al
 			{
 				quad = &lines[line].quads[q];
 				break;
-			}
+			}/*
+			else if (selection[a].type == MapEditor::ItemType::Wall3DFloor && selection[a].control_line == lines[line].quads[a].control_line)
+			{
+				quad = &lines[line].quads[a];
+				break;
+			}*/
 		}
 
 		if (!quad)
@@ -2784,7 +2811,11 @@ MapEditor::Item MapRenderer3D::determineHilight()
 					current.index = line->s1Index();
 
 				// Side part
-				if (quad->flags & UPPER)
+				if (quad->control_side >= 0) {
+					current.type = MapEditor::ItemType::WallMiddle;
+					current.real_index = current.index;
+					current.index = quad->control_side;
+				} else if (quad->flags & UPPER)
 					current.type = MapEditor::ItemType::WallTop;
 				else if (quad->flags & LOWER)
 					current.type = MapEditor::ItemType::WallBottom;
@@ -2914,15 +2945,18 @@ void MapRenderer3D::renderHilight(MapEditor::Item hilight, float alpha)
 	// Quad hilight
 	if (hilight.type == MapEditor::ItemType::WallBottom ||
 		hilight.type == MapEditor::ItemType::WallMiddle ||
-		hilight.type == MapEditor::ItemType::WallTop)
+		hilight.type == MapEditor::ItemType::WallTop /*||
+		hilight.type == MapEditor::ItemType::Wall3DFloor*/)
 	{
 		// Get side
-		MapSide* side = map->getSide(hilight.index);
+		bool is3DFloor = hilight.real_index >= 0;
+		// std::cout << is3DFloor << std::endl;
+		MapSide* side = is3DFloor ? map->getSide(hilight.real_index) : map->getSide(hilight.index);
 		if (!side)
 			return;
 
 		// Get parent line index
-		int line = map->getSide(hilight.index)->getParentLine()->getIndex();
+		int line = side->getParentLine()->getIndex();
 
 		// Get appropriate quad
 		quad_3d_t* quad = nullptr;
@@ -2933,7 +2967,12 @@ void MapRenderer3D::renderHilight(MapEditor::Item hilight, float alpha)
 				continue;
 
 			// Check quad is correct part
-			if (lines[line].quads[a].flags & UPPER)
+			if (is3DFloor && hilight.real_index == lines[line].quads[a].control_side)
+			{
+				quad = &lines[line].quads[a];
+				break;
+			}
+			else if (lines[line].quads[a].flags & UPPER)
 			{
 				if (hilight.type == MapEditor::ItemType::WallTop)
 				{
@@ -2953,7 +2992,12 @@ void MapRenderer3D::renderHilight(MapEditor::Item hilight, float alpha)
 			{
 				quad = &lines[line].quads[a];
 				break;
-			}
+			}/*
+			else if (hilight.type == MapEditor::ItemType::Wall3DFloor && hilight.control_line == lines[line].quads[a].control_line)
+			{
+				quad = &lines[line].quads[a];
+				break;
+			}*/
 		}
 
 		if (!quad)

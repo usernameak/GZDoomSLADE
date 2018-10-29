@@ -1672,8 +1672,7 @@ void Renderer::animateHilightChange(const MapEditor::Item& old_item, MapObject* 
 		animations_.push_back(
 			std::make_unique<MCAHilightFade3D>(
 				App::runTimer(),
-				old_item.index,
-				old_item.type,
+				old_item,
 				&renderer_3d_,
 				anim_flash_level_
 				));

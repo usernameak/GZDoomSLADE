@@ -711,14 +711,14 @@ void MCAHilightFade::draw()
  *******************************************************************/
 MCAHilightFade3D::MCAHilightFade3D(
 	long start,
-	int item_index,
-	MapEditor::ItemType item_type,
+	MapEditor::Item item,
 	MapRenderer3D* renderer,
 	float fade_init
 ) :
 	MCAnimation(start, true),
-	item_index{ item_index },
-	item_type{ item_type },
+	item{ item },
+	item_index{ item.index },
+	item_type{ item.type },
 	fade{ fade_init },
 	init_fade{ fade_init },
 	renderer{ renderer }
@@ -752,5 +752,5 @@ bool MCAHilightFade3D::update(long time)
  *******************************************************************/
 void MCAHilightFade3D::draw()
 {
-	renderer->renderHilight({ item_index, item_type }, fade);
+	renderer->renderHilight(item, fade);
 }
