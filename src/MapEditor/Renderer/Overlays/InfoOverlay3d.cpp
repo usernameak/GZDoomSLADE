@@ -83,7 +83,6 @@ void InfoOverlay3D::update(MapEditor::Item item, SLADEMap* map)
 
 	int item_index = item.index;
 	MapEditor::ItemType item_type = item.type;
-	int extra_floor_index = item.extra_floor_index;
 
 	// Clear current info
 	info.clear();
@@ -91,7 +90,6 @@ void InfoOverlay3D::update(MapEditor::Item item, SLADEMap* map)
 
 	// Setup variables
 	current_type = item_type;
-	current_floor_index = extra_floor_index;
 	current_item = item;
 	texname = "";
 	texture = nullptr;
@@ -328,13 +326,6 @@ void InfoOverlay3D::update(MapEditor::Item item, SLADEMap* map)
 		// For a 3D floor, use the control sector for most properties
 		// TODO this is already duplicated elsewhere that examines a highlight; maybe need a map method?
 		MapSector* sector = real_sector;
-		if (extra_floor_index >= 0 && extra_floor_index < real_sector->extra_floors.size())
-		{
-			sector = map->getSector(real_sector->extra_floors[extra_floor_index].control_sector_index);
-			if (!sector)
-				return;
-			is_floor = !is_floor;
-		}
 
 		// Get basic info
 		int fheight = sector->intProperty("heightfloor");
@@ -549,7 +540,7 @@ void InfoOverlay3D::draw(int bottom, int right, int middle, float alpha)
 			((MapSide*)object)->getParentLine()->modifiedTime() > last_update ||	// parent line updated
 			((MapSide*)object)->getSector()->modifiedTime() > last_update))))		// parent sector updated
 			{
-				MapEditor::Item newitem(object->getIndex(), current_type, current_floor_index);
+				MapEditor::Item newitem(object->getIndex(), current_type);
 				newitem.real_index = current_item.real_index;
 				update(newitem, object->getParentMap());
 			}

@@ -958,7 +958,7 @@ void MapRenderer3D::updateSectorFlats(unsigned index)
 		// TODO are the light levels of the inside and outside different?  christ
 		// TODO shouldn't this be 1?
 		xf_floor.light = sector->getLight(1, a);
-		xf_floor.flags = CEIL;
+		xf_floor.flags = FLATFLIP;
 		if (extra.draw_inside)
 			xf_floor.flags |= DRAWBOTH;
 		xf_floor.plane = extra.floor_plane;
@@ -977,7 +977,7 @@ void MapRenderer3D::updateSectorFlats(unsigned index)
 		xf_ceiling.fogcolour = control_sector->getFogColour();
 		// TODO this probably comes from the control sector, unless there's a flag, yadda...
 		xf_ceiling.light = sector->getLight(2, a);
-		xf_ceiling.flags = 0;
+		xf_ceiling.flags = CEIL | FLATFLIP;
 		if (extra.draw_inside)
 			xf_ceiling.flags |= DRAWBOTH;
 		xf_ceiling.plane = extra.ceiling_plane;
@@ -1060,24 +1060,17 @@ void MapRenderer3D::renderFlat(flat_3d_t* flat)
 		// Setup for floor or ceiling
 		if (flat->flags & CEIL)
 		{
-			if (flat_last != 2)
-			{
-				glCullFace(GL_BACK);
-				glBindBuffer(GL_ARRAY_BUFFER, vbo_flats);
-				Polygon2D::setupVBOPointers();
-				flat_last = 2;
-			}
+			glCullFace((flat->flags & FLATFLIP) ? GL_FRONT : GL_BACK);
+			flat_last = 2;
 		}
 		else
 		{
-			if (flat_last != 1)
-			{
-				glCullFace(GL_FRONT);
-				glBindBuffer(GL_ARRAY_BUFFER, vbo_flats);
-				Polygon2D::setupVBOPointers();
-				flat_last = 1;
-			}
+			glCullFace((flat->flags & FLATFLIP) ? GL_BACK : GL_FRONT);
+			flat_last = 1;
 		}
+		
+		glBindBuffer(GL_ARRAY_BUFFER, vbo_flats);
+		Polygon2D::setupVBOPointers();
 
 		if(flat->flags & DRAWBOTH)
 			glDisable(GL_CULL_FACE);
@@ -1095,12 +1088,12 @@ void MapRenderer3D::renderFlat(flat_3d_t* flat)
 		// Setup for floor or ceiling
 		if (flat->flags & CEIL)
 		{
-			glCullFace(GL_BACK);
+			glCullFace((flat->flags & FLATFLIP) ? GL_FRONT : GL_BACK);
 			glTranslated(0, 0, flat->sector->getCeilingHeight());
 		}
 		else
 		{
-			glCullFace(GL_FRONT);
+			glCullFace((flat->flags & FLATFLIP) ? GL_BACK : GL_FRONT);
 			glTranslated(0, 0, flat->sector->getFloorHeight());
 		}
 
@@ -1224,29 +1217,24 @@ void MapRenderer3D::renderFlatSelection(const ItemSelection& selection, float al
 			continue;
 
 		// Get sector
-		MapSector* sector = map->getSector(hilight.index);
+		bool is3DFloor = hilight.real_index >= 0;
+		MapSector* sector = is3DFloor ? map->getSector(hilight.real_index) : map->getSector(hilight.index);
 		if (!sector)
 			return;
 
 		// Get plane
 		plane_t plane;
-		if (hilight.extra_floor_index >= 0 && hilight.extra_floor_index < sector->extra_floors.size())
-		{
-			extra_floor_t& extra = sector->extra_floors[hilight.extra_floor_index];
-			MapSector* control_sector = map->getSector(extra.control_sector_index);
-			if (!control_sector)
-				return;
-
-			// Planes are reversed for a 3D floor
-			// TODO the DRAWBOTH hack makes the type wrong when you're inside
-			// TODO not true for vavoom
-			if (hilight.type == MapEditor::ItemType::Floor)
-				plane = control_sector->getCeilingPlane();
-			else
-				plane = control_sector->getFloorPlane();
-		}
-		else
-		{
+		if(is3DFloor) {
+			for(int i = 0; i < sector->extra_floors.size(); i++) {
+				if(sector->extra_floors[i].control_sector_index == hilight.index) {
+					extra_floor_t& extra = sector->extra_floors[i];
+					if (hilight.type == MapEditor::ItemType::Floor)
+						plane = extra.floor_plane;
+					else
+						plane = extra.ceiling_plane;
+				}
+			}
+		} else {
 			if (hilight.type == MapEditor::ItemType::Floor)
 				plane = sector->getFloorPlane();
 			else
@@ -2667,6 +2655,14 @@ void MapRenderer3D::checkVisibleQuads()
 			        lines[a].updated_time < line->frontSector()->modifiedTime() ||
 			        lines[a].updated_time < line->frontSector()->geometryUpdatedTime())
 				update = true;
+			MapSector *sector = line->frontSector();
+			for(int i = 0; i < sector->extra_floors.size(); i++) {
+				MapLine* control_line = map->getLine(sector->extra_floors[i].control_line_index);
+				if (lines[a].updated_time < control_line->s1()->modifiedTime() ||
+			        lines[a].updated_time < control_line->frontSector()->modifiedTime() ||
+			        lines[a].updated_time < control_line->frontSector()->geometryUpdatedTime())
+				update = true;
+			}
 		}
 		if (!update && line->s2())
 		{
@@ -2675,6 +2671,15 @@ void MapRenderer3D::checkVisibleQuads()
 			        lines[a].updated_time < line->backSector()->modifiedTime() ||
 			        lines[a].updated_time < line->backSector()->geometryUpdatedTime())
 				update = true;
+			
+			MapSector *sector = line->frontSector();
+			for(int i = 0; i < sector->extra_floors.size(); i++) {
+				MapLine* control_line = map->getLine(sector->extra_floors[i].control_line_index);
+				if (lines[a].updated_time < control_line->s1()->modifiedTime() ||
+			        lines[a].updated_time < control_line->frontSector()->modifiedTime() ||
+			        lines[a].updated_time < control_line->frontSector()->geometryUpdatedTime())
+				update = true;
+			}
 		}
 		if (update)
 		{
@@ -2871,18 +2876,31 @@ MapEditor::Item MapRenderer3D::determineHilight()
 			// Check if on the correct side of the plane
 			double flat_z = sector_flats[a][b].plane.height_at(cam_position.x, cam_position.y);
 			if(!(flat.flags & DRAWBOTH)) {
-				if (flat.flags & CEIL && cam_position.z >= flat_z)
-					continue;
-				if (!(flat.flags & CEIL) && cam_position.z <= flat_z)
-					continue;
+				if(flat.flags & FLATFLIP) {
+					if (flat.flags & CEIL && cam_position.z <= flat_z)
+						continue;
+					if (!(flat.flags & CEIL) && cam_position.z >= flat_z)
+						continue;
+				} else {
+					if (flat.flags & CEIL && cam_position.z >= flat_z)
+						continue;
+					if (!(flat.flags & CEIL) && cam_position.z <= flat_z)
+						continue;
+				}
 			}
 
 			// Check if intersection is within sector
 			if (!map->getSector(a)->isWithin((cam_position + cam_dir3d * dist).get2d()))
 				continue;
 
-			current.index = a;
-			current.extra_floor_index = flat.extra_floor_index;
+			if(flat.extra_floor_index < 0)
+				current.index = a;
+			else
+			{
+				current.index = flat.control_sector->getIndex();
+				current.real_index = a;
+			}
+			
 			min_dist = dist;
 			if (flat.flags & CEIL)
 				current.type = MapEditor::ItemType::Ceiling;
@@ -3053,26 +3071,24 @@ void MapRenderer3D::renderHilight(MapEditor::Item hilight, float alpha)
 	if (hilight.type == MapEditor::ItemType::Floor || hilight.type == MapEditor::ItemType::Ceiling)
 	{
 		// Get sector
-		MapSector* sector = map->getSector(hilight.index);
+		bool is3DFloor = hilight.real_index >= 0;
+		MapSector* sector = is3DFloor ? map->getSector(hilight.real_index) : map->getSector(hilight.index);
 		if (!sector)
 			return;
 
 		// Get plane
 		plane_t plane;
-		if (hilight.extra_floor_index >= 0 && hilight.extra_floor_index < sector->extra_floors.size())
-		{
-			extra_floor_t& extra = sector->extra_floors[hilight.extra_floor_index];
-
-			// Planes are reversed for a 3D floor
-			// TODO the DRAWBOTH hack makes the type wrong when you're inside
-			// TODO not true for vavoom
-			if (hilight.type == MapEditor::ItemType::Floor)
-				plane = extra.ceiling_plane;
-			else
-				plane = extra.floor_plane;
-		}
-		else
-		{
+		if(is3DFloor) {
+			for(int i = 0; i < sector->extra_floors.size(); i++) {
+				if(sector->extra_floors[i].control_sector_index == hilight.index) {
+					extra_floor_t& extra = sector->extra_floors[i];
+					if (hilight.type == MapEditor::ItemType::Floor)
+						plane = extra.floor_plane;
+					else
+						plane = extra.ceiling_plane;
+				}
+			}
+		} else {
 			if (hilight.type == MapEditor::ItemType::Floor)
 				plane = sector->getFloorPlane();
 			else

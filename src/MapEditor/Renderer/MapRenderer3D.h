@@ -32,7 +32,8 @@ public:
 	    MIDTEX	= 64,
 
 	    // Flat flags
-	    CEIL	= 8,
+	    CEIL	 = 8,
+		FLATFLIP = 16,
 
 	    // Thing flags
 	    ICON	= 4,

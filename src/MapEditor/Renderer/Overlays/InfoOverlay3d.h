@@ -22,7 +22,6 @@ private:
 	vector<string>		info;
 	vector<string>		info2;
 	MapEditor::ItemType	current_type;
-	int				    current_floor_index;
 	MapEditor::Item     current_item;
 	string				texname;
 	GLTexture*			texture;
