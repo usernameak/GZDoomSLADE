@@ -640,6 +640,7 @@ void KeyBind::initBinds()
 	addBind("me3d_generic_up", keypress_t("mwheelup", KPM_CTRL|KPM_SHIFT), "Raise target 1", group);
 	addBind("me3d_generic_down8", keypress_t("mwheeldown", KPM_CTRL), "Lower target 8", group);
 	addBind("me3d_generic_down", keypress_t("mwheeldown", KPM_CTRL|KPM_SHIFT), "Lower target 1", group);
+	addBind("me3d_delete_texture", keypress_t("delete"), "Delete texture", group);
 
 	// Map Editor 3D Camera (me3d_camera*)
 	group = "Map Editor 3D Mode Camera";

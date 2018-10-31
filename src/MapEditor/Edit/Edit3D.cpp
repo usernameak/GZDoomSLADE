@@ -38,6 +38,7 @@
 
 using MapEditor::ItemType;
 
+
 /*******************************************************************
  * EDIT3D CLASS FUNCTIONS
  *******************************************************************/
@@ -213,6 +214,7 @@ void Edit3D::changeOffset(int amount, bool x) const
 		if (items[a].type >= ItemType::WallTop && items[a].type <= ItemType::WallBottom)
 		{
 			MapSide* side = context_.map().getSide(items[a].index);
+
 			// If offsets are linked, just change the whole side offset
 			if (link_offset_)
 			{
@@ -349,7 +351,6 @@ void Edit3D::changeSectorHeight(int amount) const
 			items[a].type == ItemType::WallMiddle ||
 			items[a].type == ItemType::WallTop)
 		{
-			bool floor = false;
 			// Get sector
 			auto sector = context_.map().getSide(items[a].index)->getSector();
 
@@ -359,81 +360,48 @@ void Edit3D::changeSectorHeight(int amount) const
 				continue;
 
 			// Change height
-			/*int height = sector->intProperty("heightceiling");
-			sector->setIntProperty("heightceiling", height + amount);*/
-			//sector->setCeilingHeight(sector->getCeilingHeight() + amount);
-			if (floor)
-			{
-				// Change height
-				sector->setFloorHeight(sector->getFloorHeight() + amount);
-			}
-			else
-			{
-				// Check this sector's ceiling hasn't already been changed
-				bool done = false;
-				int index = sector->getIndex();
-				if (VECTOR_EXISTS(ceilings, index))
-					continue;
-
-				// Change height
-				sector->setCeilingHeight(sector->getCeilingHeight() + amount);
-
-				// Set to changed
-				ceilings.push_back(sector->getIndex());
-			}
+			int height = sector->intProperty("heightceiling");
+			sector->setIntProperty("heightceiling", height + amount);
 
 			// Set to changed
-			// ceilings.push_back(index);
+			ceilings.push_back(index);
 		}
 
 		// Floor
-		/*else if (items[a].type == ItemType::Floor)
+		else if (items[a].type == ItemType::Floor)
 		{
 			// Get sector
 			auto sector = context_.map().getSector(items[a].index);
 
 			// Change height
 			sector->setFloorHeight(sector->getFloorHeight() + amount);
-		}*/
+		}
 
 		// Ceiling
-		else if (items[a].type == ItemType::Ceiling || items[a].type == ItemType::Floor)
+		else if (items[a].type == ItemType::Ceiling)
 		{
-			bool floor = (items[a].type == ItemType::Floor);
 			// Get sector
 			auto sector = context_.map().getSector(items[a].index);
 
 			// Check this sector's ceiling hasn't already been changed
-
+			bool done = false;
+			int index = sector->getIndex();
+			for (unsigned b = 0; b < ceilings.size(); b++)
+			{
+				if (ceilings[b] == index)
+				{
+					done = true;
+					break;
+				}
+			}
+			if (done)
+				continue;
 
 			// Change height
-			// sector->setCeilingHeight(sector->getCeilingHeight() + amount);
-			if (floor)
-			{
-				// Change height
-				sector->setFloorHeight(sector->getFloorHeight() + amount);
-			}
-			else
-			{
-				bool done = false;
-				int index = sector->getIndex();
-				for (unsigned b = 0; b < ceilings.size(); b++)
-				{
-					if (ceilings[b] == index)
-					{
-						done = true;
-						break;
-					}
-				}
-				if (done)
-					continue;
-				// Change height
-				sector->setCeilingHeight(sector->getCeilingHeight() + amount);
+			sector->setCeilingHeight(sector->getCeilingHeight() + amount);
 
-				// Set to changed
-				ceilings.push_back(sector->getIndex());
-			}
-
+			// Set to changed
+			ceilings.push_back(sector->getIndex());
 		}
 	}
 
@@ -1148,11 +1116,9 @@ void Edit3D::changeScale(double amount, bool x) const
 		{
 			auto sector = context_.map().getSector(items[a].index);
 
-			bool floor = items[a].type == ItemType::Floor;
-
 			// Build property string
 			string prop = x ? "xscale" : "yscale";
-			prop += floor ? "floor" : "ceiling";
+			prop += (items[a].type == ItemType::Floor) ? "floor" : "ceiling";
 
 			// Set
 			double scale = sector->floatProperty(prop);
@@ -1280,6 +1246,24 @@ void Edit3D::changeHeight(int amount) const
 			context_.addEditorMessage(S_FMT("Height decreased by %d", -amount));
 	}
 }
+
+void Edit3D::deleteTexture() const
+{
+	auto& map = context_.map();
+	for(auto &item : context_.selection().selectionOrHilight()) {
+		if (item.type == MapEditor::ItemType::Floor)
+			map.getSector(item.index)->setStringProperty("texturefloor", "-");
+		else if (item.type == MapEditor::ItemType::Ceiling)
+			map.getSector(item.index)->setStringProperty("textureceiling", "-");
+		else if (item.type == MapEditor::ItemType::WallBottom)
+			map.getSide(item.index)->setStringProperty("texturebottom", "-");
+		else if (item.type == MapEditor::ItemType::WallMiddle)
+			map.getSide(item.index)->setStringProperty("texturemiddle", "-");
+		else if (item.type == MapEditor::ItemType::WallTop)
+			map.getSide(item.index)->setStringProperty("texturetop", "-");
+	}
+}
+
 /* Edit3D::changeTexture
  * Opens the texture browser for the currently selected 3d mode walls
  * and/or floors
@@ -1296,11 +1280,14 @@ void Edit3D::changeTexture() const
 	int type = 0;
 	auto& first = selection[0];
 	auto& map = context_.map();
-	if (first.type == MapEditor::ItemType::Floor || first.type == MapEditor::ItemType::Ceiling)
+	if (first.type == MapEditor::ItemType::Floor)
 	{
-		MapSector *sector;
-		bool floor;
-		tex = floor ? sector->getFloorTex() : sector->getCeilingTex();
+		tex = map.getSector(first.index)->getFloorTex();
+		type = 1;
+	}
+	else if (first.type == MapEditor::ItemType::Ceiling)
+	{
+		tex = map.getSector(first.index)->getCeilingTex();
 		type = 1;
 	}
 	else if (first.type == MapEditor::ItemType::WallBottom)
@@ -1328,21 +1315,19 @@ void Edit3D::changeTexture() const
 			{
 				for (unsigned a = 0; a < selection.size(); a++)
 				{
-					MapSector *sector;
-					bool floor;
-					if (selection[a].type == MapEditor::ItemType::Floor || selection[a].type == MapEditor::ItemType::Ceiling) {
-						sector->setStringProperty(floor ? "texturefloor" : "textureceiling", tex);
-					}
+					if (selection[a].type == MapEditor::ItemType::Floor)
+						map.getSector(selection[a].index)->setStringProperty("texturefloor", tex);
+					else if (selection[a].type == MapEditor::ItemType::Ceiling)
+						map.getSector(selection[a].index)->setStringProperty("textureceiling", tex);
 				}
 			}
 			else if (hl.index >= 0)
 			{
 				// Hilight if no selection
-				MapSector *sector;
-				bool floor;
-				if (hl.type == MapEditor::ItemType::Floor || hl.type == MapEditor::ItemType::Ceiling) {
-					sector->setStringProperty(floor ? "texturefloor" : "textureceiling", tex);
-				}
+				if (hl.type == MapEditor::ItemType::Floor)
+					map.getSector(hl.index)->setStringProperty("texturefloor", tex);
+				else if (hl.type == MapEditor::ItemType::Ceiling)
+					map.getSector(hl.index)->setStringProperty("textureceiling", tex);
 			}
 		}
 

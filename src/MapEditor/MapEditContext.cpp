@@ -1144,6 +1144,9 @@ bool MapEditContext::handleKeyBind(string key, fpoint2_t position)
 		else if (key == "me3d_paste_tex_type")	edit_3d_.paste(Edit3D::CopyType::TexType);
 		else if (key == "me3d_paste_tex_adj")	edit_3d_.floodFill(Edit3D::CopyType::TexType);
 
+		// Delete texture
+		else if (key == "me3d_delete_texture")  edit_3d_.deleteTexture();
+
 		// Light changes
 		else if	(key == "me3d_light_up16")		edit_3d_.changeSectorLight(16);
 		else if (key == "me3d_light_up")		edit_3d_.changeSectorLight(1);
