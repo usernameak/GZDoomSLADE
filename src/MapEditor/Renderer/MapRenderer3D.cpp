@@ -1781,9 +1781,11 @@ void MapRenderer3D::updateLine(unsigned index)
 			MapSector* control_sector = map->getSector(extra.control_sector_index);
 			MapLine* control_line = map->getLine(extra.control_line_index);
 
-			// TODO
-			xoff = yoff = 0;
+			xoff = control_line->s1()->getOffsetX();
+			yoff = control_line->s1()->getOffsetY();
 			sx = sy = 1;
+			if (map->currentFormat() == MAP_UDMF)
+				_apply_zdoom_per_section_offsets(control_line->s1(), "mid", &xoff, &yoff, &sx, &sy);
 
 			// TODO missing texture check should look for this!
 			string texname;
