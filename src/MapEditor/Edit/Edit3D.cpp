@@ -1249,6 +1249,7 @@ void Edit3D::changeHeight(int amount) const
 
 void Edit3D::deleteTexture() const
 {
+	context_.beginUndoRecord("Delete Texture", true, false, false);
 	auto& map = context_.map();
 	for(auto &item : context_.selection().selectionOrHilight()) {
 		if (item.type == MapEditor::ItemType::Floor)
@@ -1262,6 +1263,7 @@ void Edit3D::deleteTexture() const
 		else if (item.type == MapEditor::ItemType::WallTop)
 			map.getSide(item.index)->setStringProperty("texturetop", "-");
 	}
+	context_.endUndoRecord();
 }
 
 /* Edit3D::changeTexture
