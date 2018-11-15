@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<CodeLite_Project Name="SLADE" InternalType="Console">
+<CodeLite_Project Name="GSLADE" InternalType="Console">
   <Plugins>
     <Plugin Name="qmake">
       <![CDATA[00050001N0005Debug0000000000000001N0009Debug-osx0000000000000001N0007Release0000000000000001N0013Release-CMake0000000000000001N0011Release-osx000000000000]]>

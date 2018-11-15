@@ -116,7 +116,7 @@ public:
 // MainWindow class constructor
 // ----------------------------------------------------------------------------
 MainWindow::MainWindow()
-	: STopWindow("SLADE", "main")
+	: STopWindow("GSLADE", "main")
 {
 	lasttipindex = 0;
 	custom_menus_begin_ = 2;
@@ -465,7 +465,7 @@ bool MainWindow::exitProgram()
 	// Confirm exit
 	if (confirm_exit && !panel_archivemanager->askedSaveUnchanged())
 	{
-		if (wxMessageBox("Are you sure you want to exit SLADE?", "SLADE", wxICON_QUESTION|wxYES_NO, this) != wxYES)
+		if (wxMessageBox("Are you sure you want to exit GSLADE?", "GSLADE", wxICON_QUESTION|wxYES_NO, this) != wxYES)
 			return false;
 	}
 
@@ -672,13 +672,13 @@ bool MainWindow::handleAction(string id)
 	if (id == "main_about")
 	{
 		wxAboutDialogInfo info;
-		info.SetName("SLADE");
+		info.SetName("GSLADE");
 		string version = "v" + Global::version;
 		if (Global::sc_rev != "")
 			version = version + " (Git Rev " + Global::sc_rev + ")";
 		info.SetVersion(version);
 		info.SetWebSite("http://slade.mancubus.net");
-		info.SetDescription("It's a Doom Editor");
+		info.SetDescription("It's a GZDoom Editor");
 
 		// Set icon
 		string icon_filename = App::path("slade.ico", App::Dir::Temp);
@@ -687,7 +687,7 @@ bool MainWindow::handleAction(string id)
 		wxRemoveFile(icon_filename);
 
 		string year = wxNow().Right(4);
-		info.SetCopyright(S_FMT("(C) 2008-%s Simon Judd <sirjuddington@gmail.com>", year));
+		info.SetCopyright(S_FMT("(C) 2008-%s Simon Judd <sirjuddington@gmail.com> and UsernameAK <delta.cxx@gmail.com>", year));
 
 		wxAboutBox(info);
 

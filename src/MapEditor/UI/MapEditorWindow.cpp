@@ -95,7 +95,7 @@ EXTERN_CVAR(Int, flat_drawtype);
 // MapEditorWindow class constructor
 // ----------------------------------------------------------------------------
 MapEditorWindow::MapEditorWindow() :
-	STopWindow{ "SLADE", "map" }
+	STopWindow{ "GSLADE", "map" }
 {
 	if (mew_maximized) Maximize();
 	setupLayout();
@@ -657,9 +657,9 @@ bool MapEditorWindow::openMap(Archive::MapDesc map)
 
 		// Set window title
 		if (archive)
-			SetTitle(S_FMT("SLADE - %s of %s", map.name, archive->filename(false)));
+			SetTitle(S_FMT("GSLADE - %s of %s", map.name, archive->filename(false)));
 		else
-			SetTitle(S_FMT("SLADE - %s (UNSAVED)", map.name));
+			SetTitle(S_FMT("GSLADE - %s (UNSAVED)", map.name));
 
 		// Create backup
 		if (map.head &&
@@ -1030,7 +1030,7 @@ bool MapEditorWindow::saveMapAs()
 	}
 
 	// Set window title
-	SetTitle(S_FMT("SLADE - %s of %s", mdesc_current.name, wad.filename(false)));
+	SetTitle(S_FMT("GSLADE - %s of %s", mdesc_current.name, wad.filename(false)));
 
 	return true;
 }

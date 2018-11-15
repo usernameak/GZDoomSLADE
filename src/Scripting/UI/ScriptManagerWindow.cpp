@@ -219,7 +219,7 @@ wxImageList* createTreeImageList()
 // ScriptManagerWindow class constructor
 // ----------------------------------------------------------------------------
 ScriptManagerWindow::ScriptManagerWindow() :
-	STopWindow("SLADE Script Manager", "scriptmanager")
+	STopWindow("GSLADE Script Manager", "scriptmanager")
 {
 	setupLayout();
 

@@ -2538,7 +2538,7 @@ bool ArchivePanel::wavDSndConvert()
 
 	// Show message if errors occurred
 	if (errors)
-		wxMessageBox("Some entries could not be converted, see console log for details", "SLADE", wxICON_INFORMATION);
+		wxMessageBox("Some entries could not be converted, see console log for details", "GSLADE", wxICON_INFORMATION);
 
 	return true;
 }
@@ -2607,7 +2607,7 @@ bool ArchivePanel::dSndWavConvert()
 
 	// Show message if errors occurred
 	if (errors)
-		wxMessageBox("Some entries could not be converted, see console log for details", "SLADE", wxICON_INFORMATION);
+		wxMessageBox("Some entries could not be converted, see console log for details", "GSLADE", wxICON_INFORMATION);
 
 	return true;
 }

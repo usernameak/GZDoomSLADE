@@ -61,7 +61,7 @@ string error = "";
 
 int    beta_num    = 5;
 int    version_num = 3120;
-string version     = "3.1.2 Beta 5";
+string version     = "1.0a";
 #ifdef GIT_DESCRIPTION
 string sc_rev = GIT_DESCRIPTION;
 #else
@@ -312,7 +312,7 @@ public:
 
 		// Create message
 		wxEmailMessage msg;
-		msg.SetFrom("SLADE");
+		msg.SetFrom("GSLADE");
 		msg.SetTo("slade.errors@gmail.com");
 		msg.SetSubject("[" + Global::version + "] @ " + top_level_);
 		msg.SetMessage(S_FMT("Description:\n%s\n\n%s", text_description_->GetValue(), trace_));
