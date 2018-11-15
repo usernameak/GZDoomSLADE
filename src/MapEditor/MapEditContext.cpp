@@ -181,7 +181,6 @@ void MapEditContext::setEditMode(Mode mode)
 	case Mode::Sectors:	addEditorMessage("Sectors mode (Normal)"); break;
 	case Mode::Things:	addEditorMessage("Things mode"); break;
 	case Mode::Visual:		addEditorMessage("3d mode"); break;
-	default: break;
 	};
 
 	if (edit_mode_ != Mode::Visual)
@@ -250,6 +249,7 @@ void MapEditContext::setSectorEditMode(SectorMode mode)
 		addEditorMessage("Sectors mode (Ceilings)");
 
 	updateStatusText();
+	forceRefreshRenderer();
 }
 
 // ----------------------------------------------------------------------------
@@ -1690,6 +1690,9 @@ bool MapEditContext::handleAction(string id)
 	else if (id == "mapw_flat_none")
 	{
 		flat_drawtype = 0;
+		addEditorMessage("Flats: None");
+		updateStatusText();
+		forceRefreshRenderer();
 		return true;
 	}
 
@@ -1697,6 +1700,9 @@ bool MapEditContext::handleAction(string id)
 	else if (id == "mapw_flat_untextured")
 	{
 		flat_drawtype = 1;
+		addEditorMessage("Flats: Untextured");
+		updateStatusText();
+		forceRefreshRenderer();
 		return true;
 	}
 
@@ -1704,6 +1710,9 @@ bool MapEditContext::handleAction(string id)
 	else if (id == "mapw_flat_textured")
 	{
 		flat_drawtype = 2;
+		addEditorMessage("Flats: Textured");
+		updateStatusText();
+		forceRefreshRenderer();
 		return true;
 	}
 

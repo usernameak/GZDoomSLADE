@@ -230,6 +230,11 @@ ScriptManagerWindow::ScriptManagerWindow() :
 		"-- Note that this will not be saved between sessions\n\n";
 	script_scratchbox_.read_only = true;
 	openScriptTab(&script_scratchbox_);
+
+	wxMessageBox(
+		"Please note that the SLADE lua scripting feature is currently WIP, "
+		"and the scripting API is subject to change.",
+		"WIP Feature");
 }
 
 // ----------------------------------------------------------------------------
@@ -609,7 +614,7 @@ void ScriptManagerWindow::populateScriptsTree()
 ScriptPanel* ScriptManagerWindow::currentPage() const
 {
 	auto page = tabs_scripts_->GetCurrentPage();
-	if (page->GetName() == "script")
+	if (page && page->GetName() == "script")
 		return (ScriptPanel*)page;
 
 	return nullptr;
